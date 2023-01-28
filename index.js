@@ -1,34 +1,71 @@
 console.log('Flappy Bird');
 
+const HIT_Sound = new Audio();
+HIT_Sound.src = './effects/hit.wav'
+
 const sprites = new Image();
 sprites.src = './sprites.png';
 
 const canvas = document.querySelector('canvas');
 const contexto = canvas.getContext('2d');
 
-const FP = {
-    sourceX: 0,
+const Ready = {
+    sourceX: 134,
     sourceY: 0,
-    weight: 34,
-    height: 24,
-    x: 10,
+    weight: 175,
+    height: 152,
+    x: (canvas.width / 2) - 174 / 2,
     y: 50,
-    gravity: 0.25,
-    speed: 0,
-    update() {
-        FP.speed = FP.speed + FP.gravity;
-        FP.y = FP.y + FP.speed;
-    },
     draw() {
         contexto.drawImage (
             sprites,
-            FP.sourceX, FP.sourceY,
-            FP.weight, FP.height,
-            FP.x, FP.y,
-            FP.weight, FP.height,
-        );
+            Ready.sourceX, Ready.sourceY,
+            Ready.weight, Ready.height,
+            Ready.x, Ready.y,
+            Ready.weight, Ready.height,
+        )
     }
 }
+
+function FP_Create() {
+    const FP = {
+        sourceX: 0,
+        sourceY: 0,
+        weight: 34,
+        height: 24,
+        x: 10,
+        y: 50,
+        jumping: 4.6,
+        jump() { 
+            FP.speed = - FP.jumping
+        },
+        gravity: 0.25,
+        speed: 0,
+        update() {
+            if(colision(FP, GR)) {
+                HIT_Sound.play();
+                changeScreen(Screens.Start);
+                return;
+            }
+        
+            FP.speed = FP.speed + FP.gravity;
+            FP.y = FP.y + FP.speed;
+        },
+    
+        draw() {
+            contexto.drawImage (
+                sprites,
+                FP.sourceX, FP.sourceY,
+                FP.weight, FP.height,
+                FP.x, FP.y,
+                FP.weight, FP.height,
+            );
+        }
+    }
+    return FP;
+}
+
+
 
 const GR = {
     sourceX: 0,
@@ -85,15 +122,75 @@ const BG = {
     }
 }
 
-function loop() {
-    BG.draw();
-    GR.draw();
-    FP.update();    
-    FP.draw();
+function colision(FP, GR) {
+    const FPy = FP.y + FP.height
+    const GRy = GR.y;
+    
+    if(FPy >= GRy) {
+        return true;
+    }
 
+    return false;
+}
+
+const globals = {};
+let ActiveScreen = {};
+function changeScreen(NewScreen) {
+    ActiveScreen = NewScreen;
+
+    if(ActiveScreen.initialize) {
+        ActiveScreen.initialize();
+    }
+}
+
+const Screens = {
+    Start: {
+        initialize() {
+            globals.FP = FP_Create();
+        },
+        draw() {
+            BG.draw();
+            GR.draw();  
+            globals.FP.draw();
+            Ready.draw();
+        },
+        click() {
+            changeScreen(Screens.Game)
+        },
+        update() {
+            
+        }
+    }
+}
+
+Screens.Game = {
+    draw() {
+        BG.draw();
+        GR.draw();  
+        globals.FP.draw();
+    },
+    click() {
+        globals.FP.jump()
+    },
+    update() {
+        globals.FP.update();  
+    }
+}
+
+function loop() {
+    ActiveScreen.draw();
+    ActiveScreen.update();
+ 
     requestAnimationFrame(loop);
 }
 
+window.addEventListener('click', function() {
+    if(ActiveScreen.click) {
+        ActiveScreen.click()
+    }
+})
+
+changeScreen(Screens.Start)
 loop();
 
 
