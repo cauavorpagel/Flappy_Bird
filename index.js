@@ -9,6 +9,8 @@ HIT_Sound.src = './effects/efeitos_hit.wav'
 const canvas = document.querySelector('canvas');
 const contexto = canvas.getContext('2d');
 
+let frames = 0;
+
 const Ready = {
     sourceX: 134,
     sourceY: 0,
@@ -52,12 +54,28 @@ function FP_Create() {
             FP.y = FP.y + FP.speed;
         },
         moviments: [
-            {sourceX: 0, sourceY: 0,},
-            {sourceX: 0, sourceY: 26,},
-            {sourceX: 0, sourceY: 52,},
+            { sourceX: 0, sourceY: 0, },
+            { sourceX: 0, sourceY: 26, },
+            { sourceX: 0, sourceY: 52, }, 
+            { sourceX: 0, sourceY: 26, }, 
         ],
+        currentFrame: 0,
+        updateCurrentFrame() {
+            const frameInterval = 10;
+            const passedInterval = frames % frameInterval === 0;
+
+            if(passedInterval) {
+                const incrementBase = 1;            
+                const increment = incrementBase + FP.currentFrame;
+                const repeatBase = FP.moviments.length;
+                FP.currentFrame = increment % repeatBase
+            }
+            
+        },
         draw() {
-            const { sourceX, sourceY } = FP.moviments[0];
+            FP.updateCurrentFrame();
+            const { sourceX, sourceY } = FP.moviments[FP.currentFrame];
+
             contexto.drawImage (
                 sprites,
                 sourceX, sourceY,
