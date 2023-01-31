@@ -1,10 +1,10 @@
 console.log('Flappy Bird');
 
-const HIT_Sound = new Audio();
-HIT_Sound.src = './effects/hit.wav'
-
 const sprites = new Image();
 sprites.src = './sprites.png';
+
+const HIT_Sound = new Audio();
+HIT_Sound.src = './effects/efeitos_hit.wav'
 
 const canvas = document.querySelector('canvas');
 const contexto = canvas.getContext('2d');
@@ -42,7 +42,7 @@ function FP_Create() {
         gravity: 0.25,
         speed: 0,
         update() {
-            if(colision(FP, GR)) {
+            if(colision(FP, globals.GR)) {
                 HIT_Sound.play();
                 changeScreen(Screens.Start);
                 return;
@@ -51,11 +51,16 @@ function FP_Create() {
             FP.speed = FP.speed + FP.gravity;
             FP.y = FP.y + FP.speed;
         },
-    
+        moviments: [
+            {sourceX: 0, sourceY: 0,},
+            {sourceX: 0, sourceY: 26,},
+            {sourceX: 0, sourceY: 52,},
+        ],
         draw() {
+            const { sourceX, sourceY } = FP.moviments[0];
             contexto.drawImage (
                 sprites,
-                FP.sourceX, FP.sourceY,
+                sourceX, sourceY,
                 FP.weight, FP.height,
                 FP.x, FP.y,
                 FP.weight, FP.height,
@@ -65,62 +70,71 @@ function FP_Create() {
     return FP;
 }
 
+function GR_Create() {
+    const GR = {
+        sourceX: 0,
+        sourceY: 610,
+        weight: 224,
+        height: 112,
+        x: 0,
+        y: canvas.height - 112,
+        update() {
+            const GR_Moviment = 1;
+            const GR_Repeat = GR.weight / 2;
+            const Moviment = GR.x - GR_Moviment;
+            GR.x = Moviment % GR_Repeat;
 
-
-const GR = {
-    sourceX: 0,
-    sourceY: 610,
-    weight: 224,
-    height: 112,
-    x: 0,
-    y: canvas.height - 112,
-    draw() {
-        contexto.drawImage(
-            sprites,
-            GR.sourceX, GR.sourceY,
-            GR.weight, GR.height,
-            GR.x, GR.y,
-            GR.weight, GR.height,
-        );
-
-        contexto.drawImage(
-            sprites,
-            GR.sourceX, GR.sourceY,
-            GR.weight, GR.height,
-            (GR.x + GR.weight), GR.y,
-            GR.weight, GR.height,
-        );
+        },
+        draw() {
+            contexto.drawImage(
+                sprites,
+                GR.sourceX, GR.sourceY,
+                GR.weight, GR.height,
+                GR.x, GR.y,
+                GR.weight, GR.height,
+            );
+    
+            contexto.drawImage(
+                sprites,
+                GR.sourceX, GR.sourceY,
+                GR.weight, GR.height,
+                (GR.x + GR.weight), GR.y,
+                GR.weight, GR.height,
+            );
+        }
     }
+    return GR;
 }
 
-const BG = {
-    sourceX: 390,
-    sourceY: 0,
-    weight: 275,
-    height: 204,
-    x: 0,
-    y: canvas.height - 204,
-    draw() {
-        contexto.fillStyle = '#70c5ce';
-        contexto.fillRect(0,0, canvas.width, canvas.height);
-
-        contexto.drawImage(
-            sprites,
-            BG.sourceX, BG.sourceY,
-            BG.weight, BG.height,
-            BG.x, BG.y,
-            BG.weight, BG.height,
-        );
-
-        contexto.drawImage(
-            sprites,
-            BG.sourceX, BG.sourceY,
-            BG.weight, BG.height,
-            (BG.x + BG.weight), BG.y,
-            BG.weight, BG.height,
-        )
+    const BG = {
+        sourceX: 390,
+        sourceY: 0,
+        weight: 275,
+        height: 204,
+        x: 0,
+        y: canvas.height - 204,
+        draw() {
+            contexto.fillStyle = '#70c5ce';
+            contexto.fillRect(0,0, canvas.width, canvas.height);
+    
+            contexto.drawImage(
+                sprites,
+                BG.sourceX, BG.sourceY,
+                BG.weight, BG.height,
+                BG.x, BG.y,
+                BG.weight, BG.height,
+            );
+    
+            contexto.drawImage(
+                sprites,
+                BG.sourceX, BG.sourceY,
+                BG.weight, BG.height,
+                (BG.x + BG.weight), BG.y,
+                BG.weight, BG.height,
+            )
+        }
     }
-}
+
 
 function colision(FP, GR) {
     const FPy = FP.y + FP.height
@@ -147,10 +161,11 @@ const Screens = {
     Start: {
         initialize() {
             globals.FP = FP_Create();
+            globals.GR = GR_Create();
         },
         draw() {
             BG.draw();
-            GR.draw();  
+            globals.GR.draw();  
             globals.FP.draw();
             Ready.draw();
         },
@@ -158,7 +173,7 @@ const Screens = {
             changeScreen(Screens.Game)
         },
         update() {
-            
+            globals.GR.update();
         }
     }
 }
@@ -166,7 +181,7 @@ const Screens = {
 Screens.Game = {
     draw() {
         BG.draw();
-        GR.draw();  
+        globals.GR.draw();  
         globals.FP.draw();
     },
     click() {
@@ -174,6 +189,7 @@ Screens.Game = {
     },
     update() {
         globals.FP.update();  
+        globals.GR.update();
     }
 }
 
