@@ -1,5 +1,8 @@
 console.log('Flappy Bird');
 
+
+let frames = 0;
+
 const sprites = new Image();
 sprites.src = './sprites.png';
 
@@ -8,8 +11,6 @@ HIT_Sound.src = './effects/efeitos_hit.wav'
 
 const canvas = document.querySelector('canvas');
 const contexto = canvas.getContext('2d');
-
-let frames = 0;
 
 const Ready = {
     sourceX: 134,
@@ -25,6 +26,24 @@ const Ready = {
             Ready.weight, Ready.height,
             Ready.x, Ready.y,
             Ready.weight, Ready.height,
+        )
+    }
+}
+
+const gameOver = {
+    sourceX: 134,
+    sourceY: 153,
+    weight: 226,
+    height: 200,
+    x: (canvas.width / 2) - 226 / 2,
+    y: 50,
+    draw() {
+        contexto.drawImage (
+            sprites,
+            gameOver.sourceX, gameOver.sourceY,
+            gameOver.weight, gameOver.height,
+            gameOver.x, gameOver.y,
+            gameOver.weight, gameOver.height,
         )
     }
 }
@@ -46,7 +65,7 @@ function FP_Create() {
         update() {
             if(colision(FP, globals.GR)) {
                 HIT_Sound.play();
-                changeScreen(Screens.Start);
+                changeScreen(Screens.Game_Over);
                 return;
             }
         
@@ -124,35 +143,128 @@ function GR_Create() {
     return GR;
 }
 
-    const BG = {
-        sourceX: 390,
-        sourceY: 0,
-        weight: 275,
-        height: 204,
-        x: 0,
-        y: canvas.height - 204,
+const BG = {
+    sourceX: 390,
+    sourceY: 0,
+    weight: 275,
+    height: 204,
+    x: 0,
+    y: canvas.height - 204,
+    draw() {
+        contexto.fillStyle = '#70c5ce';
+        contexto.fillRect(0,0, canvas.width, canvas.height);
+    
+        contexto.drawImage(
+            sprites,
+            BG.sourceX, BG.sourceY,
+            BG.weight, BG.height,
+            BG.x, BG.y,
+            BG.weight, BG.height,
+        );
+    
+        contexto.drawImage(
+            sprites,
+            BG.sourceX, BG.sourceY,
+            BG.weight, BG.height,
+            (BG.x + BG.weight), BG.y,
+            BG.weight, BG.height,
+        )
+    }
+}
+
+
+function PP_Create() {
+    const PP = {
+        weight: 52,
+        height: 400,
+        ground: {
+            sourceX: 0,
+            sourceY: 169,
+        },
+        sky: {
+            sourceX: 52,
+            sourceY: 169,
+        },
+        space: 80,
         draw() {
-            contexto.fillStyle = '#70c5ce';
-            contexto.fillRect(0,0, canvas.width, canvas.height);
+            
+            PP.duos.forEach(function(duo) {
+                const yRandom = duo.y;
+                const PPdistance = 90;
+
+                const SkyPPX = duo.x;
+                const SkyPPY = yRandom;
+                contexto.drawImage(
+                    sprites,
+                    PP.sky.sourceX, PP.sky.sourceY,
+                    PP.weight, PP.height,
+                    SkyPPX, SkyPPY,
+                    PP.weight, PP.height,
+                )
     
-            contexto.drawImage(
-                sprites,
-                BG.sourceX, BG.sourceY,
-                BG.weight, BG.height,
-                BG.x, BG.y,
-                BG.weight, BG.height,
-            );
-    
-            contexto.drawImage(
-                sprites,
-                BG.sourceX, BG.sourceY,
-                BG.weight, BG.height,
-                (BG.x + BG.weight), BG.y,
-                BG.weight, BG.height,
-            )
+                const GroundPPX = duo.x;
+                const GroundPPY = PP.height + PPdistance + yRandom;
+                contexto.drawImage(
+                    sprites,
+                    PP.ground.sourceX, PP.ground.sourceY,
+                    PP.weight, PP.height,
+                    GroundPPX, GroundPPY,
+                    PP.weight, PP.height,
+                )
+                
+                duo.skyPP = {
+                    x: SkyPPX, 
+                    y: PP.height + SkyPPY
+                }    
+                duo.groundPP = {
+                    x: GroundPPX,
+                    y: GroundPPY,
+                }
+            })   
+        },
+        makeColisionFP(duo) {
+            const topFP = globals.FP.y;
+            const bottomFP = globals.FP.y + globals.FP.height;
+
+            if((globals.FP.x + globals.FP.weight) >= duo.x) {
+                if(topFP <= duo.skyPP.y) {
+                    return true;
+                }    
+
+                if(bottomFP >= duo.groundPP.y) {
+                    return true;
+                }
+            }
+
+            return false;
+        },
+        duos: [],
+        update() {
+            const passedFrames = frames % 100 === 0;
+            if(passedFrames) {
+                PP.duos.push({
+                    x: canvas.width,
+                    y: -150 * (Math.random() + 1),
+                })
+            }
+
+            PP.duos.forEach(function(duo) {
+                duo.x = duo.x - 2;
+
+                if(PP.makeColisionFP(duo)) {
+                    HIT_Sound.play();
+                    changeScreen(Screens.Game_Over)
+                }
+
+                if(duo.x + PP.weight <= 0) {
+                    PP.duos.shift();
+                }
+            });
+
         }
     }
-
+    return PP;
+}
 
 function colision(FP, GR) {
     const FPy = FP.y + FP.height
@@ -163,6 +275,27 @@ function colision(FP, GR) {
     }
 
     return false;
+}
+
+function SC_Create() {
+    const SC = {
+        score: 0,
+        draw() {
+            contexto.font = '30px serif',
+            contexto.fillStyle = 'white',
+            contexto.textAlign = 'right',
+            contexto.fillText(`Score ${SC.score}`, canvas.width - 15, 40)
+        },
+        update() {
+            const frameInterval = 10;
+            const passedFrames = frames % frameInterval === 0;
+
+            if(passedFrames) {
+                SC.score = SC.score + 1;
+            }
+        },
+    }
+    return SC;
 }
 
 const globals = {};
@@ -179,6 +312,7 @@ const Screens = {
     Start: {
         initialize() {
             globals.FP = FP_Create();
+            globals.PP = PP_Create();
             globals.GR = GR_Create();
         },
         draw() {
@@ -197,24 +331,44 @@ const Screens = {
 }
 
 Screens.Game = {
+    initialize() {
+        globals.SC = SC_Create();
+    },
     draw() {
         BG.draw();
+        globals.PP.draw();
         globals.GR.draw();  
         globals.FP.draw();
+        globals.SC.draw();
     },
     click() {
         globals.FP.jump()
     },
     update() {
         globals.FP.update();  
+        globals.PP.update();
         globals.GR.update();
+        globals.SC.update();
+    }
+}
+
+Screens.Game_Over = {
+    draw() {
+        gameOver.draw();
+    },
+    update() {
+
+    },
+    click() {
+        changeScreen(Screens.Start)
     }
 }
 
 function loop() {
     ActiveScreen.draw();
     ActiveScreen.update();
- 
+
+    frames = frames + 1;
     requestAnimationFrame(loop);
 }
 
